@@ -12,6 +12,12 @@ async function bootstrap(): Promise<void> {
   const apiPrefix = config.get<string>('API_PREFIX', 'v1');
   app.setGlobalPrefix(apiPrefix);
 
+  app.enableCors({
+    origin: config.get<string>('WEB_ORIGIN', 'http://localhost:3001'),
+    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
+
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
   );
