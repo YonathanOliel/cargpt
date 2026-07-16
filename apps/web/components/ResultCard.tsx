@@ -63,6 +63,16 @@ export function ResultCard({ result }: { result: DiagnosisResult }) {
                   <span>גבוה</span>
                 </div>
               </div>
+              {h.sources && h.sources.length > 0 && (
+                <div className="sources">
+                  <span className="sources-label">מקורות:</span>
+                  {h.sources.map((s) => (
+                    <span key={`${s.publisher}-${s.title}`} className="source-chip" title={s.title}>
+                      {s.publisher}
+                    </span>
+                  ))}
+                </div>
+              )}
             </li>
           );
         })}

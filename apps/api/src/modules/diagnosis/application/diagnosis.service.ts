@@ -138,6 +138,7 @@ export class DiagnosisService {
         price: h.price,
         estLaborHours: h.estLaborHours,
         riskLevel: h.riskLevel,
+        sources: h.sources,
       }));
   }
 

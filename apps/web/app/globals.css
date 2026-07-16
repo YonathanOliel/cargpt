@@ -418,6 +418,27 @@ input:focus {
   font-variant-numeric: tabular-nums;
   color: var(--text-dim);
 }
+
+.sources {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+.sources-label {
+  color: var(--text-dim);
+  font-size: 12px;
+}
+.source-chip {
+  background: rgba(48, 209, 88, 0.12);
+  border: 1px solid rgba(48, 209, 88, 0.3);
+  color: #7be495;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  cursor: help;
+}
 .followup + .followup {
   margin-top: 6px;
 }

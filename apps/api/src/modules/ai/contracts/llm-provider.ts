@@ -2,6 +2,7 @@ import type {
   FollowUpAnswer,
   FollowUpQuestion,
   PriceEstimate,
+  Source,
   UrgencyLevel,
   Vehicle,
 } from '@cargpt/shared';
@@ -24,6 +25,7 @@ export interface RawHypothesis {
   price: PriceEstimate;
   estLaborHours?: number;
   riskLevel: UrgencyLevel;
+  sources?: Source[];
 }
 
 /**

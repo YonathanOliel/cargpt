@@ -20,6 +20,15 @@ export interface Vehicle {
   mileage?: number;
 }
 
+/** A verified reference backing a hypothesis (no fabricated URLs). */
+export interface Source {
+  /** Short reference title, e.g. "נורת בדיקת מנוע (Check Engine)". */
+  title: string;
+  /** Recognized publisher, e.g. "NHTSA", "משרד התחבורה", "מדריך יצרן". */
+  publisher: string;
+  type: 'manufacturer' | 'regulator' | 'community' | 'standard' | 'reference';
+}
+
 /** A single possible cause with its probability and price estimate. */
 export interface DiagnosisHypothesis {
   /** Human-readable cause, e.g. "מיסב גלגל". */
@@ -33,6 +42,8 @@ export interface DiagnosisHypothesis {
   price: PriceEstimate;
   estLaborHours?: number;
   riskLevel: UrgencyLevel;
+  /** Verified references backing this hypothesis. */
+  sources?: Source[];
 }
 
 export interface PriceEstimate {

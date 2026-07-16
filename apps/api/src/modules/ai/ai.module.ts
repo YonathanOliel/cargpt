@@ -2,7 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { LLM_PROVIDER, type LlmProvider } from './contracts/llm-provider';
 import { VISION_PROVIDER, type VisionProvider } from './contracts/vision-provider';
-import { MockLlmProvider } from './providers/mock-llm.provider';
+import { KnowledgeBaseProvider } from './providers/knowledge-base.provider';
+import { OpenAiProvider } from './providers/openai.provider';
 import { MockVisionProvider } from './providers/mock-vision.provider';
 
 /**
@@ -12,20 +13,26 @@ import { MockVisionProvider } from './providers/mock-vision.provider';
  */
 @Module({
   providers: [
-    MockLlmProvider,
+    KnowledgeBaseProvider,
     MockVisionProvider,
     {
       provide: LLM_PROVIDER,
-      inject: [ConfigService, MockLlmProvider],
-      useFactory: (config: ConfigService, mock: MockLlmProvider): LlmProvider => {
-        const provider = config.get<string>('LLM_PROVIDER', 'mock');
+      inject: [ConfigService, KnowledgeBaseProvider],
+      useFactory: (config: ConfigService, kb: KnowledgeBaseProvider): LlmProvider => {
+        const provider = config.get<string>('LLM_PROVIDER', 'kb');
+        const apiKey = config.get<string>('OPENAI_API_KEY');
         switch (provider) {
-          // case 'openai': return new OpenAiProvider(...);
+          case 'openai':
+            // Falls back to the knowledge base if the key is missing or a call fails.
+            return apiKey
+              ? new OpenAiProvider(apiKey, config.get<string>('OPENAI_MODEL', 'gpt-4o-mini'), kb)
+              : kb;
           // case 'anthropic': return new AnthropicProvider(...);
           // case 'gemini': return new GeminiProvider(...);
-          case 'mock':
+          case 'kb':
+          case 'mock': // backwards-compatible alias
           default:
-            return mock;
+            return kb;
         }
       },
     },

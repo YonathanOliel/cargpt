@@ -9,6 +9,8 @@ export interface EnvConfig {
   JWT_EXPIRES_IN: string;
   LLM_PROVIDER: string;
   VISION_PROVIDER: string;
+  OPENAI_API_KEY?: string;
+  OPENAI_MODEL: string;
 }
 
 const DEFAULT_INSECURE_SECRET = 'change-me-in-production';
@@ -53,7 +55,9 @@ export function validateEnv(raw: Record<string, unknown>): EnvConfig {
     WEB_ORIGIN: String(raw.WEB_ORIGIN ?? 'http://localhost:3001'),
     JWT_SECRET: jwtSecret,
     JWT_EXPIRES_IN: String(raw.JWT_EXPIRES_IN ?? '15m'),
-    LLM_PROVIDER: String(raw.LLM_PROVIDER ?? 'mock'),
+    LLM_PROVIDER: String(raw.LLM_PROVIDER ?? 'kb'),
     VISION_PROVIDER: String(raw.VISION_PROVIDER ?? 'mock'),
+    OPENAI_API_KEY: raw.OPENAI_API_KEY ? String(raw.OPENAI_API_KEY) : undefined,
+    OPENAI_MODEL: String(raw.OPENAI_MODEL ?? 'gpt-4o-mini'),
   };
 }

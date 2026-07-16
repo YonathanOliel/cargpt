@@ -1,5 +1,5 @@
 import { DiagnosisService } from './diagnosis.service';
-import { MockLlmProvider } from '../../ai/providers/mock-llm.provider';
+import { KnowledgeBaseProvider } from '../../ai/providers/knowledge-base.provider';
 import { MockVisionProvider } from '../../ai/providers/mock-vision.provider';
 import { InMemoryDiagnosisRepository } from '../infrastructure/in-memory-diagnosis.repository';
 import type { StartDiagnosisRequest, Vehicle } from '@cargpt/shared';
@@ -8,7 +8,7 @@ const vehicle: Vehicle = { id: 'v1', make: 'Mazda', model: '3', year: 2019 };
 
 function makeService(): DiagnosisService {
   return new DiagnosisService(
-    new MockLlmProvider(),
+    new KnowledgeBaseProvider(),
     new MockVisionProvider(),
     new InMemoryDiagnosisRepository(),
   );

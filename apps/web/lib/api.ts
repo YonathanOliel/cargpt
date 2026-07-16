@@ -15,6 +15,12 @@ export interface PriceEstimate {
   currency: string;
 }
 
+export interface Source {
+  title: string;
+  publisher: string;
+  type: 'manufacturer' | 'regulator' | 'community' | 'standard' | 'reference';
+}
+
 export interface Hypothesis {
   label: string;
   probability: number;
@@ -23,6 +29,7 @@ export interface Hypothesis {
   price: PriceEstimate;
   estLaborHours?: number;
   riskLevel: Urgency;
+  sources?: Source[];
 }
 
 export interface DiagnosisResult {
