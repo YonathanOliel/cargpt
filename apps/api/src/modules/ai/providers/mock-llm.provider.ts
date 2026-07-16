@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { FollowUpQuestion, UrgencyLevel } from '@cargpt/shared';
+import type { FollowUpQuestion } from '@cargpt/shared';
 import type {
   DiagnosisPrompt,
   LlmProvider,
@@ -212,21 +212,13 @@ export class MockLlmProvider implements LlmProvider {
     }));
   }
 
+  /**
+   * Base summary naming the most likely cause. The urgency-specific action
+   * phrase is appended by the service from the *resolved* urgency, so the
+   * wording always matches the badge shown to the user.
+   */
   private buildSummary(hypotheses: RawHypothesis[]): string {
     const top = [...hypotheses].sort((a, b) => b.probability - a.probability)[0];
-    const worst = this.worstRisk(hypotheses);
-    const action =
-      worst === 'red'
-        ? 'מומלץ להימנע מנסיעה עד לבדיקה'
-        : worst === 'yellow'
-          ? 'ניתן לנסוע בזהירות ולבדוק בקרוב'
-          : 'אין דחיפות מיידית';
-    return `הסיבה הסבירה ביותר: ${top.label}. ${action}.`;
-  }
-
-  private worstRisk(hypotheses: RawHypothesis[]): UrgencyLevel {
-    if (hypotheses.some((h) => h.riskLevel === 'red')) return 'red';
-    if (hypotheses.some((h) => h.riskLevel === 'yellow')) return 'yellow';
-    return 'green';
+    return `הסיבה הסבירה ביותר: ${top.label}.`;
   }
 }

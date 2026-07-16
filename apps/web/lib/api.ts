@@ -59,9 +59,41 @@ export interface Vehicle {
 async function req<T>(path: string, init: RequestInit = {}, token?: string): Promise<T> {
   const headers: Record<string, string> = { ...(init.headers as Record<string, string>) };
   if (token) headers.Authorization = `Bearer ${token}`;
-  const res = await fetch(`${API}${path}`, { ...init, headers });
-  if (!res.ok) throw new Error(`API error ${res.status}`);
+
+  let res: Response;
+  try {
+    res = await fetch(`${API}${path}`, { ...init, headers });
+  } catch {
+    throw new ApiError(0, 'לא ניתן להתחבר לשרת. בדוק/י את החיבור ונסה/י שוב.');
+  }
+
+  if (!res.ok) {
+    throw new ApiError(res.status, await messageFor(res));
+  }
   return res.json() as Promise<T>;
+}
+
+/** Error carrying the HTTP status so callers can react to specific cases. */
+export class ApiError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
+async function messageFor(res: Response): Promise<string> {
+  if (res.status === 429) return 'יותר מדי בקשות — נסה/י שוב בעוד רגע.';
+  if (res.status === 401) return 'ההתחברות פגה — התחבר/י מחדש.';
+  try {
+    const body = (await res.json()) as { message?: string };
+    if (body?.message) return body.message;
+  } catch {
+    /* ignore non-JSON bodies */
+  }
+  return 'אירעה שגיאה. נסה/י שוב.';
 }
 
 function json(body: unknown): RequestInit {

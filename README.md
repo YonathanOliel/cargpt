@@ -8,8 +8,9 @@
 ```
 apps/
   api/       Backend — NestJS (Clean Architecture, provider-agnostic AI)
+  web/       Frontend — Next.js 14 (App Router, RTL, Dark, נגיש)
 packages/
-  shared/    חוזי דומיין (types) משותפים ל-API ו-clients
+  shared/    חוזי דומיין (types) משותפים ל-API ול-clients
 docs/        PRD, UX/Design System, Architecture, Roadmap
 ```
 
@@ -20,14 +21,30 @@ docs/        PRD, UX/Design System, Architecture, Roadmap
 ## התחלה
 ```powershell
 npm install
-npm run build        # בונה shared + api
-npm test --workspace apps/api
-npm run start:dev --workspace apps/api
+npm run build                        # בונה shared + api
+npm test                             # בדיקות (jest)
+
+# הרצה חיה (שני טרמינלים)
+npm run start:dev --workspace apps/api   # API  -> http://localhost:3000/v1
+npm run dev       --workspace apps/web   # Web  -> http://localhost:3001
 ```
 
-השרת עולה כברירת מחדל על http://localhost:3000. בדיקה: `GET /v1/health`.
+- בדיקת בריאות: `GET http://localhost:3000/v1/health`
+- בפיתוח (ללא ספק SMS) קוד ה-OTP נרשם ללוג של ה-API ומוחזר בשדה `devCode`.
+
+## סביבה (משתני env)
+ראה `.env.example`. משתנים עיקריים:
+- `JWT_SECRET` — חובה בחוזק >= 32 תווים ב-production (האפליקציה לא תעלה אחרת).
+- `WEB_ORIGIN` — origin מורשה ל-CORS (ברירת מחדל `http://localhost:3001`).
+- `LLM_PROVIDER` / `VISION_PROVIDER` — `mock` (ברירת מחדל) או ספק אמיתי בעתיד.
+
+## ארכיטקטורה
+- **AI Abstraction Layer** — `LlmProvider` / `VisionProvider` מאחורי interface; החלפת ספק ללא שינוי לוגיקה.
+- **אבחון הסתברותי** עם safety guardrails: דחיפות משוקללת לפי הסתברות; תלונות בטיחות (בלמים/היגוי/צמיגים/חום) לא יורדות מתחת ל-yellow.
+- **אבטחה**: Helmet, CORS מוגבל, rate limiting (throttler), ולידציית env בעליית השרת, JWT+RBAC, ולידציה ב-DTO.
 
 ## סטטוס
-Sprint 1 (Foundation): שכבת AI abstraction + מנוע אבחון הסתברותי (mock provider), חוזי דומיין, health. חיבור Postgres/pgvector וספקי AI אמיתיים — הצעד הבא.
+- Sprint 1 (Foundation) + הקשחת production: AI abstraction, אבחון הסתברותי, Auth (OTP+JWT+RBAC), Vehicles, Vision (mock), אתר web מלא ונגיש.
+- אחסון נוכחי in-memory. הצעד הבא: Postgres+pgvector, ספקי AI אמיתיים, מנוע מחיר, מוסכים+לידים.
 
 מסמכי תכנון מלאים תחת `docs/`.

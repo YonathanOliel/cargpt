@@ -70,6 +70,26 @@ describe('DiagnosisService', () => {
     expect(started.result!.urgency).not.toBe('green');
   });
 
+  it('keeps the summary action phrase consistent with the resolved urgency', async () => {
+    const service = makeService();
+    const started = await service.start({
+      vehicle,
+      inputType: 'text',
+      text: 'יש רעש בזמן פנייה',
+    });
+    const done = await service.submitAnswers(started.diagnosisId, [
+      { questionId: 'when', answer: 'רק בפנייה' },
+      { questionId: 'warning-light', answer: 'לא' },
+    ]);
+
+    const { urgency, summary } = done.result!;
+    // Low-probability red hypothesis -> weighted urgency is yellow, and the
+    // summary must reflect that (not "avoid driving").
+    expect(urgency).toBe('yellow');
+    expect(summary).toContain('בזהירות');
+    expect(summary).not.toContain('להימנע');
+  });
+
   it('starts a diagnosis from an uploaded image and returns a vision summary', async () => {
     const service = makeService();
     const res = await service.startFromImage(vehicle, {

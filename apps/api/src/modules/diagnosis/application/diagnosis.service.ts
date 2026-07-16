@@ -7,6 +7,7 @@ import {
   type FollowUpAnswer,
   type StartDiagnosisRequest,
   type StartDiagnosisResponse,
+  type UrgencyLevel,
   type Vehicle,
 } from '@cargpt/shared';
 import { LLM_PROVIDER, type LlmProvider } from '../../ai/contracts/llm-provider';
@@ -21,7 +22,7 @@ import {
   type DiagnosisRepository,
   type DiagnosisSession,
 } from '../domain/diagnosis.types';
-import { resolveUrgency } from '../domain/urgency';
+import { resolveUrgency, urgencyAction } from '../domain/urgency';
 
 @Injectable()
 export class DiagnosisService {
@@ -108,7 +109,7 @@ export class DiagnosisService {
     const result: DiagnosisResult = {
       diagnosisId: session.id,
       urgency,
-      summary: raw.summary ?? '',
+      summary: this.composeSummary(raw.summary, urgency),
       hypotheses: this.toHypotheses(hypotheses),
       disclaimer: SAFETY_DISCLAIMER,
     };
@@ -117,6 +118,13 @@ export class DiagnosisService {
     await this.repo.update(session);
 
     return { diagnosisId: session.id, status: 'complete', result };
+  }
+
+  /** Combines the provider's base summary with an action phrase for the resolved urgency. */
+  private composeSummary(base: string | undefined, urgency: UrgencyLevel): string {
+    const action = urgencyAction(urgency);
+    const trimmed = base?.trim();
+    return trimmed ? `${trimmed} ${action}.` : `${action}.`;
   }
 
   private toHypotheses(raw: RawHypothesis[]): DiagnosisHypothesis[] {

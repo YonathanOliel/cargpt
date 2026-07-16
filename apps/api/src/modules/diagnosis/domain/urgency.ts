@@ -31,12 +31,36 @@ export function worstRisk(hypotheses: RawHypothesis[]): UrgencyLevel {
   );
 }
 
+/** Minimum cumulative probability at a risk level for it to drive urgency. */
+const RISK_PROBABILITY_THRESHOLD = 0.25;
+
 /**
- * Computes final urgency and applies safety guardrails.
- * The result is the more severe of: model risk vs. keyword-based floor.
+ * Computes final urgency using a probability-weighted model, then applies
+ * safety guardrails.
+ *
+ * Rationale: the highest-risk hypothesis alone should not dominate — a 5%
+ * chance of a red-level fault should not paint the whole result red. Instead
+ * we look at how much probability mass sits at each risk level.
+ *
+ * - red    if cumulative red probability >= threshold
+ * - yellow if cumulative (red + yellow) probability >= threshold
+ * - green  otherwise
+ *
+ * A safety-related complaint (brakes, steering, tyres, overheating...) can
+ * never resolve to green — it is floored at yellow.
  */
 export function resolveUrgency(complaint: string, hypotheses: RawHypothesis[]): UrgencyLevel {
-  let urgency = worstRisk(hypotheses);
+  const redProb = sumProbability(hypotheses, 'red');
+  const yellowProb = sumProbability(hypotheses, 'yellow');
+
+  let urgency: UrgencyLevel;
+  if (redProb >= RISK_PROBABILITY_THRESHOLD) {
+    urgency = 'red';
+  } else if (redProb + yellowProb >= RISK_PROBABILITY_THRESHOLD) {
+    urgency = 'yellow';
+  } else {
+    urgency = 'green';
+  }
 
   const text = complaint.toLowerCase();
   const hasSafetyKeyword = SAFETY_KEYWORDS.some((k) => text.includes(k.toLowerCase()));
@@ -47,4 +71,23 @@ export function resolveUrgency(complaint: string, hypotheses: RawHypothesis[]): 
   }
 
   return urgency;
+}
+
+function sumProbability(hypotheses: RawHypothesis[], level: UrgencyLevel): number {
+  return hypotheses
+    .filter((h) => h.riskLevel === level)
+    .reduce((sum, h) => sum + h.probability, 0);
+}
+
+/** Human-readable action phrase matching a resolved urgency level. */
+export function urgencyAction(urgency: UrgencyLevel): string {
+  switch (urgency) {
+    case 'red':
+      return 'מומלץ להימנע מנסיעה עד לבדיקה';
+    case 'yellow':
+      return 'ניתן לנסוע בזהירות ולבדוק בקרוב';
+    case 'green':
+    default:
+      return 'אין דחיפות מיידית';
+  }
 }
