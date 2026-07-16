@@ -45,4 +45,15 @@ describe('KnowledgeBaseProvider', () => {
     expect(res.needsFollowUp).toBe(false);
     expect(res.hypotheses!.some((h) => h.label.includes('בלם'))).toBe(true);
   });
+
+  it('covers newly added topics (turbo, timing belt, CV joint)', async () => {
+    const turbo = await provider.generateDiagnosis(prompt('אובדן כוח ושריקה מהטורבו'));
+    expect(turbo.hypotheses!.some((h) => h.label.includes('טורבו'))).toBe(true);
+
+    const timing = await provider.generateDiagnosis(prompt('רעש שרשרת תזמון בהתנעה'));
+    expect(timing.hypotheses!.length).toBeGreaterThan(0);
+
+    const cv = await provider.generateDiagnosis(prompt('טק טק חזק בפנייה חדה'));
+    expect(cv.hypotheses!.some((h) => h.label.includes('ציריה'))).toBe(true);
+  });
 });
