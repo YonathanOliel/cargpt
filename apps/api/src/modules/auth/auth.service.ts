@@ -29,13 +29,19 @@ export class AuthService {
     private readonly config: ConfigService,
   ) {}
 
-  /** Issues an OTP. In dev (no SMS provider) the code is logged. */
-  async requestOtp(phone: string): Promise<void> {
+  /**
+   * Issues an OTP. In dev (no SMS provider) the code is logged and returned
+   * so the web client can complete the flow. In production it returns undefined.
+   */
+  async requestOtp(phone: string): Promise<string | undefined> {
     const code = this.otp.issue(phone);
-    if (this.config.get('NODE_ENV') !== 'production') {
+    const isProd = this.config.get('NODE_ENV') === 'production';
+    if (!isProd) {
       this.logger.log(`OTP for ${phone}: ${code}`);
+      return code;
     }
     // TODO: integrate SMS provider (e.g. Twilio / Israeli gateway).
+    return undefined;
   }
 
   async verifyOtp(phone: string, code: string): Promise<AuthTokens> {

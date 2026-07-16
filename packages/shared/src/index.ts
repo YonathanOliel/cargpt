@@ -72,6 +72,15 @@ export interface StartDiagnosisResponse {
   status: 'needs_followup' | 'complete';
   followUpQuestions?: FollowUpQuestion[];
   result?: DiagnosisResult;
+  /** Present when the diagnosis was started from an uploaded image. */
+  vision?: VisionSummary;
+}
+
+/** What the vision model detected in an uploaded image. */
+export interface VisionSummary {
+  detectedLabel: string;
+  description: string;
+  confidence: number;
 }
 
 export interface FollowUpAnswer {

@@ -7,9 +7,15 @@ import {
   type FollowUpAnswer,
   type StartDiagnosisRequest,
   type StartDiagnosisResponse,
+  type Vehicle,
 } from '@cargpt/shared';
 import { LLM_PROVIDER, type LlmProvider } from '../../ai/contracts/llm-provider';
 import type { RawHypothesis } from '../../ai/contracts/llm-provider';
+import {
+  VISION_PROVIDER,
+  type VisionInput,
+  type VisionProvider,
+} from '../../ai/contracts/vision-provider';
 import {
   DIAGNOSIS_REPOSITORY,
   type DiagnosisRepository,
@@ -21,6 +27,7 @@ import { resolveUrgency } from '../domain/urgency';
 export class DiagnosisService {
   constructor(
     @Inject(LLM_PROVIDER) private readonly llm: LlmProvider,
+    @Inject(VISION_PROVIDER) private readonly vision: VisionProvider,
     @Inject(DIAGNOSIS_REPOSITORY) private readonly repo: DiagnosisRepository,
   ) {}
 
@@ -34,6 +41,31 @@ export class DiagnosisService {
     };
     await this.repo.create(session);
     return this.run(session);
+  }
+
+  /** Analyzes an uploaded image and starts a diagnosis from what was detected. */
+  async startFromImage(
+    vehicle: Vehicle,
+    image: VisionInput,
+  ): Promise<StartDiagnosisResponse> {
+    const vision = await this.vision.analyze(image, 'dashboard_light');
+    const session: DiagnosisSession = {
+      id: randomUUID(),
+      vehicle,
+      complaint: vision.suggestedComplaint,
+      answers: [],
+      createdAt: new Date(),
+    };
+    await this.repo.create(session);
+    const response = await this.run(session);
+    return {
+      ...response,
+      vision: {
+        detectedLabel: vision.detectedLabel,
+        description: vision.description,
+        confidence: vision.confidence,
+      },
+    };
   }
 
   async submitAnswers(

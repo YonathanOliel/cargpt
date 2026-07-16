@@ -1,12 +1,17 @@
 import { DiagnosisService } from './diagnosis.service';
 import { MockLlmProvider } from '../../ai/providers/mock-llm.provider';
+import { MockVisionProvider } from '../../ai/providers/mock-vision.provider';
 import { InMemoryDiagnosisRepository } from '../infrastructure/in-memory-diagnosis.repository';
 import type { StartDiagnosisRequest, Vehicle } from '@cargpt/shared';
 
 const vehicle: Vehicle = { id: 'v1', make: 'Mazda', model: '3', year: 2019 };
 
 function makeService(): DiagnosisService {
-  return new DiagnosisService(new MockLlmProvider(), new InMemoryDiagnosisRepository());
+  return new DiagnosisService(
+    new MockLlmProvider(),
+    new MockVisionProvider(),
+    new InMemoryDiagnosisRepository(),
+  );
 }
 
 describe('DiagnosisService', () => {
@@ -63,5 +68,18 @@ describe('DiagnosisService', () => {
     const started = await service.start({ vehicle, inputType: 'text', text: 'בעיה בבלמים' });
     expect(started.status).toBe('complete');
     expect(started.result!.urgency).not.toBe('green');
+  });
+
+  it('starts a diagnosis from an uploaded image and returns a vision summary', async () => {
+    const service = makeService();
+    const res = await service.startFromImage(vehicle, {
+      mimeType: 'image/jpeg',
+      buffer: Buffer.alloc(10),
+    });
+
+    expect(res.vision).toBeDefined();
+    expect(res.vision!.detectedLabel).toBeTruthy();
+    // The detected light drives a real diagnosis flow (questions or result).
+    expect(['needs_followup', 'complete']).toContain(res.status);
   });
 });

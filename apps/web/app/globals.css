@@ -240,3 +240,79 @@ input:focus {
   color: var(--text-dim);
   font-size: 14px;
 }
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.link {
+  background: none;
+  border: none;
+  color: var(--brand);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.muted {
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.veh-chip {
+  background: var(--glass);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 8px 14px;
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.veh-chip.active {
+  background: rgba(10, 132, 255, 0.25);
+  border-color: var(--brand);
+}
+
+.file-btn {
+  background: var(--surface-2);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text);
+  border-radius: 14px;
+  padding: 13px 18px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.vision {
+  background: rgba(10, 132, 255, 0.1);
+  border: 1px solid rgba(10, 132, 255, 0.3);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.vision b {
+  color: #64b5ff;
+}
+
+.section-title {
+  font-weight: 700;
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+

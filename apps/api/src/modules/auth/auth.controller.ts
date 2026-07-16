@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { AuthTokens, AuthUser } from '@cargpt/shared';
 import { AuthService } from './auth.service';
@@ -13,9 +13,9 @@ export class AuthController {
   // Tight rate limit on OTP issuance to prevent SMS abuse.
   @Throttle({ default: { limit: 3, ttl: 60_000 } })
   @Post('otp/request')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async requestOtp(@Body() dto: RequestOtpDto): Promise<void> {
-    await this.auth.requestOtp(dto.phone);
+  async requestOtp(@Body() dto: RequestOtpDto): Promise<{ sent: true; devCode?: string }> {
+    const devCode = await this.auth.requestOtp(dto.phone);
+    return { sent: true, devCode };
   }
 
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
