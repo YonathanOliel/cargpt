@@ -1,20 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import type { DiagnosisPrompt, LlmProvider, RawDiagnosis, RawHypothesis } from '../contracts/llm-provider';
-import { GENERIC_GUIDANCE, UNIVERSAL_FOLLOWUPS } from '../knowledge-base/kb.data';
-import { retrieve } from '../knowledge-base/retrieval';
+import { GENERIC_GUIDANCE } from '../knowledge-base/kb.data';
+import { retrieveTop, type RetrievalMatch } from '../knowledge-base/retrieval';
 
-const MATCH_THRESHOLD = 1;
+/** A confident, specific match — safe to ask targeted follow-ups. */
+const STRONG_SCORE = 3;
 
 /**
  * Free-text diagnosis grounded in a verified knowledge base.
  *
- * Any complaint is matched against the KB by a scoring retriever; follow-up
- * answers are folded back into the search text so vague input is progressively
- * refined. When nothing specific matches, the user is guided with a universal
- * question and then given sourced general guidance — never a dead end.
+ * Behaviour designed to feel helpful rather than confusing:
+ * - Strong, specific match  -> that topic, with its targeted follow-ups.
+ * - Weak but single topic   -> answer directly (no friction questions).
+ * - Ambiguous (tie)         -> merge the leading causes across topics.
+ * - Nothing matches         -> sourced general guidance, never a dead end.
  *
- * Implements the same LlmProvider interface as future OpenAI/Gemini adapters,
- * which can reuse this KB as grounding (RAG) when a real model is enabled.
+ * Implements the same LlmProvider interface as the OpenAI adapter, which can
+ * reuse this KB as grounding (RAG) when a real model is enabled.
  */
 @Injectable()
 export class KnowledgeBaseProvider implements LlmProvider {
@@ -24,30 +26,53 @@ export class KnowledgeBaseProvider implements LlmProvider {
     const searchText = [prompt.complaint, ...prompt.answers.map((a) => a.answer)].join(' ');
     const answered = new Set(prompt.answers.map((a) => a.questionId));
 
-    const match = retrieve(searchText);
+    const matches = retrieveTop(searchText, 3);
 
-    if (match && match.score >= MATCH_THRESHOLD) {
-      const pending = (match.entry.followUps ?? []).filter((q) => !answered.has(q.id));
+    if (matches.length === 0) {
+      return this.complete(GENERIC_GUIDANCE);
+    }
+
+    const top = matches[0];
+
+    // Confident, specific match: refine with the topic's own follow-ups.
+    if (top.score >= STRONG_SCORE) {
+      const pending = (top.entry.followUps ?? []).filter((q) => !answered.has(q.id));
       if (pending.length > 0) {
         return { needsFollowUp: true, followUpQuestions: pending };
       }
-      return {
-        needsFollowUp: false,
-        summary: this.buildSummary(match.entry.hypotheses),
-        hypotheses: this.normalize(match.entry.hypotheses),
-      };
+      return this.complete(top.entry.hypotheses);
     }
 
-    // No specific match: ask a universal question first, then give sourced guidance.
-    const pendingUniversal = UNIVERSAL_FOLLOWUPS.filter((q) => !answered.has(q.id));
-    if (pendingUniversal.length > 0) {
-      return { needsFollowUp: true, followUpQuestions: pendingUniversal };
+    // Ambiguous (several topics tie): merge their leading causes.
+    const tied = matches.filter((m) => m.score === top.score);
+    if (tied.length > 1) {
+      return this.complete(this.mergeLeadingCauses(tied));
     }
+
+    // Weak but single topic: answer directly, no friction question.
+    return this.complete(top.entry.hypotheses);
+  }
+
+  private complete(hypotheses: RawHypothesis[]): RawDiagnosis {
     return {
       needsFollowUp: false,
-      summary: this.buildSummary(GENERIC_GUIDANCE),
-      hypotheses: this.normalize(GENERIC_GUIDANCE),
+      summary: this.buildSummary(hypotheses),
+      hypotheses: this.normalize(hypotheses),
     };
+  }
+
+  /** Takes the most likely cause from each tied topic to present cross-area options. */
+  private mergeLeadingCauses(matches: RetrievalMatch[]): RawHypothesis[] {
+    const picked: RawHypothesis[] = [];
+    const seen = new Set<string>();
+    for (const m of matches.slice(0, 3)) {
+      const best = [...m.entry.hypotheses].sort((a, b) => b.probability - a.probability)[0];
+      if (best && !seen.has(best.label)) {
+        picked.push(best);
+        seen.add(best.label);
+      }
+    }
+    return picked;
   }
 
   /** Ensure probabilities sum to ~1. */

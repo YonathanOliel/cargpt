@@ -37,12 +37,17 @@ export function scoreEntry(text: string, entry: KnowledgeEntry): number {
  * Ties are broken by definition order (first entry wins).
  */
 export function retrieve(text: string): RetrievalMatch | undefined {
-  let best: RetrievalMatch | undefined;
+  return retrieveTop(text, 1)[0];
+}
+
+/** Returns the top-N matching entries, sorted by score descending. */
+export function retrieveTop(text: string, n = 3): RetrievalMatch[] {
+  const scored: RetrievalMatch[] = [];
   for (const entry of KNOWLEDGE_BASE) {
     const score = scoreEntry(text, entry);
-    if (score > 0 && (!best || score > best.score)) {
-      best = { entry, score };
-    }
+    if (score > 0) scored.push({ entry, score });
   }
-  return best;
+  // Stable sort by score desc; definition order preserved on ties.
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, n);
 }

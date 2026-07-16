@@ -24,18 +24,11 @@ describe('KnowledgeBaseProvider', () => {
     expect(res.hypotheses![0].sources![0].publisher).toBeTruthy();
   });
 
-  it('handles unknown input by asking a universal question, then giving sourced guidance', async () => {
-    const first = await provider.generateDiagnosis(prompt('משהו מוזר קורה לי ברכב'));
-    expect(first.needsFollowUp).toBe(true);
-    expect(first.followUpQuestions![0].id).toBe('area');
-
-    // After answering the universal question with no useful area, we still get guidance.
-    const second = await provider.generateDiagnosis(
-      prompt('משהו מוזר קורה לי ברכב', [{ questionId: 'area', answer: 'לא יודע' }]),
-    );
-    expect(second.needsFollowUp).toBe(false);
-    expect(second.hypotheses!.some((h) => h.label.includes('OBD'))).toBe(true);
-    expect(second.hypotheses!.every((h) => (h.sources?.length ?? 0) > 0)).toBe(true);
+  it('answers unknown input directly with sourced guidance (no dead-end question)', async () => {
+    const res = await provider.generateDiagnosis(prompt('משהו מוזר קורה לי ברכב'));
+    expect(res.needsFollowUp).toBe(false);
+    expect(res.hypotheses!.some((h) => h.label.includes('OBD'))).toBe(true);
+    expect(res.hypotheses!.every((h) => (h.sources?.length ?? 0) > 0)).toBe(true);
   });
 
   it('routes a vague complaint to a real topic once the area is chosen', async () => {
