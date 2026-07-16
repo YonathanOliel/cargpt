@@ -51,12 +51,22 @@ export function useCarGPT() {
     setAuthReady(true);
   }, []);
 
+  const logout = useCallback(() => {
+    localStorage.removeItem(TOKEN_KEY);
+    setToken(null);
+    setVehicles([]);
+    setSelected(null);
+  }, []);
+
   useEffect(() => {
     if (!token) return;
     listVehicles(token)
       .then(setVehicles)
-      .catch(() => undefined);
-  }, [token]);
+      .catch((err) => {
+        // Session expired or revoked — drop it and return to the login state.
+        if (err instanceof ApiError && err.status === 401) logout();
+      });
+  }, [token, logout]);
 
   /* ---------- Auth ---------- */
   const sendOtp = useCallback(async () => {
@@ -86,13 +96,6 @@ export function useCarGPT() {
       setError(messageOf(err, 'קוד שגוי או שפג תוקפו.'));
     }
   }, [phone, code]);
-
-  const logout = useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY);
-    setToken(null);
-    setVehicles([]);
-    setSelected(null);
-  }, []);
 
   const addVehicle = useCallback(
     async (make: string, model: string, year: string) => {
